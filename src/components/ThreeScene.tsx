@@ -9,14 +9,16 @@ function RobotAvatar() {
   const rightArmRef = useRef<THREE.Group>(null);
   const leftArmRef = useRef<THREE.Group>(null);
   const { theme } = useTheme();
+  const timeRef = useRef(0);
 
   // Premium muted tech colors adapting to light/dark mode
   const mainColor = theme === 'dark' ? '#1c1917' : '#e7e5e4'; // Neutral dark/light
   const jointColor = theme === 'dark' ? '#44403c' : '#a8a29e'; 
   const accentColor = theme === 'dark' ? '#38bdf8' : '#0ea5e9'; // Sky blue glowing accent
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
+  useFrame((state, delta) => {
+    timeRef.current += delta;
+    const t = timeRef.current;
 
     if (groupRef.current) {
       // Interactive: Look at the mouse cursor

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowDown } from 'lucide-react';
 import ThreeScene from './ThreeScene';
+import { PERSONAL_INFO } from '../constants';
 
 export default function Hero() {
   const roles = ["Data Engineer", "BI Developer", "Web Developer"];
@@ -86,7 +87,7 @@ export default function Hero() {
           >
             <a 
               href="/resume.pdf" 
-              download="Mikael_Andrew_Resume.pdf"
+              download={PERSONAL_INFO.resumeName}
               className="bg-[var(--text-primary)] text-[var(--bg-color)] px-6 py-3 rounded-full font-medium hover:scale-105 transition-transform"
             >
               My Resume

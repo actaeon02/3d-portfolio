@@ -43,7 +43,7 @@ export default function SelectedWorks() {
                 {/* Background Image */}
                 <div 
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${index === 0 ? 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?q=80&w=1974&auto=format&fit=crop'})` }}
+                  style={{ backgroundImage: `url(${index === 0 ? 'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?q=80&w=2070&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1543286386-713bcd51403b?q=80&w=2070&auto=format&fit=crop'})` }}
                 ></div>
                 {/* Dark Gradient Overlay for readability and style */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${project.imageColor} mix-blend-multiply opacity-60 group-hover:opacity-40 transition-opacity duration-500`}></div>

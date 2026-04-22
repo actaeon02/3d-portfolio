@@ -27,7 +27,7 @@ export default function ScrollReveal({
   const y = useTransform(smoothProgress, [0, 1], [yOffset, 0]);
 
   return (
-    <motion.div ref={ref} style={{ opacity, y }} className={className}>
+    <motion.div ref={ref} style={{ opacity, y }} className={`relative ${className}`}>
       {children}
     </motion.div>
   );
