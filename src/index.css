@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    --bg-color: #e5e5dd;
+    --bg-alt: #d5d1ce;
+    --text-primary: #0f0f0f; /* Neutral 900 - Darker */
+    --text-secondary: #4a4a4a; /* Neutral 600 - Darker */
+    --accent: #3879e2; /* Soft Electric Blue (Blue 500) */
+    --border: #d4d4d8;
+    --nav-bg: rgba(245, 245, 244, 0.8);
+  }
+
+  .dark {
+    --bg-color: #0a0a0a;
+    --bg-alt: #141414;
+    --text-primary: #f9f8f8; /* Neutral 100 - Lighter */
+    --text-secondary: #e6e3e3; /* Neutral 300 - Lighter */
+    --accent: #60a5fa; /* Glowing Soft Blue (Blue 400) */
+    --border: #262626;
+    --nav-bg: rgba(10, 10, 10, 0.8);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  }
+
+  html::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+.bg-alt {
+  background-color: var(--bg-alt);
+  transition: background-color 0.3s ease;
+}
+
+.bg-base {
+  background-color: var(--bg-color);
+  transition: background-color 0.3s ease;
+}
+
+.text-muted {
+  color: var(--text-secondary);
+}
+
+.border-subtle {
+  border-color: var(--border);
+}
+
+.nav-blur {
+  background-color: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
