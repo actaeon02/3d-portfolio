@@ -5,8 +5,8 @@ import { useTheme } from './ThemeProvider';
 const navLinks = [
   { name: 'About', href: '#about' },
   { name: 'Experience', href: '#experience' },
-  { name: 'Tech', href: '#tech-stack' },
   { name: 'Designs', href: '#projects' },
+  { name: 'Tech', href: '#tech-stack' },
 ];
 
 export default function Navbar() {
@@ -86,10 +86,10 @@ export default function Navbar() {
                 }`}
               >
                 {link.name}
-                {/* Active/Hover Indicator Dot */}
+                {/* Active/Hover Indicator Line */}
                 <span 
-                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[var(--accent)] rounded-full transition-all duration-300 ${
-                    isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-75'
+                  className={`absolute -bottom-1 left-0 w-full h-0.5 bg-[var(--accent)] rounded-full transition-all duration-300 origin-left ${
+                    isActive ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0 group-hover:opacity-100 group-hover:scale-x-100'
                   }`}
                 />
               </a>

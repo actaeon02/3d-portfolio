@@ -9,7 +9,7 @@ const experiences = [
     company: "APRIL",
     period: "Jan 2026 — Present",
     location: "Riau, Indonesia",
-    skills: ["Databricks", "Delta Lake", "API", "Python", "PostgreSQL"]
+    skills: ["Databricks", "Delta Lake", "API", "Python", "PostgreSQL", "Metabase"]
   },
   {
     id: 2,
@@ -17,7 +17,7 @@ const experiences = [
     company: "SKINTIFIC",
     period: "Mar 2025 — Jan 2026",
     location: "Jakarta, Indonesia",
-    skills: ["BigQuery", "Airflow", "Python", "SQL", "Docker"]
+    skills: ["BigQuery", "Airflow", "Python", "SQL", "PowerBI", "Docker"]
   },
   {
     id: 3,
@@ -33,7 +33,7 @@ const experiences = [
     company: "Cycle & Carriage",
     period: "Jan 2024 — Jun 2024",
     location: "Kuala Lumpur, Malaysia",
-    skills: ["SSMS", "SSRS", "Database", "IT Ops"]
+    skills: ["SSRS", "SSMS", "Database Management", "IT Support"]
   }
 ];
 

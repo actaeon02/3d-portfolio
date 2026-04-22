@@ -38,15 +38,21 @@ export default function SelectedWorks() {
           {projects.map((project, index) => (
             <div key={project.id} className="group">
               <ScrollReveal
-                className="w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden mb-12 relative group-hover:shadow-2xl transition-all duration-500"
+                className="w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden mb-12 relative group-hover:shadow-2xl transition-all duration-500 bg-[var(--bg-alt)]"
               >
-                {/* Background Image */}
-                <div 
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${index === 0 ? 'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?q=80&w=2070&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1543286386-713bcd51403b?q=80&w=2070&auto=format&fit=crop'})` }}
-                ></div>
+                {/* Visual Image */}
+                <img 
+                  src={index === 0 
+                    ? 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' 
+                    : 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+                  }
+                  alt={project.title}
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                />
                 {/* Dark Gradient Overlay for readability and style */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${project.imageColor} mix-blend-multiply opacity-60 group-hover:opacity-40 transition-opacity duration-500`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-br ${project.imageColor} mix-blend-multiply opacity-50 group-hover:opacity-30 transition-opacity duration-500`}></div>
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500"></div>
               </ScrollReveal>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
