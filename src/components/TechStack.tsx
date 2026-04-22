@@ -75,7 +75,7 @@ const FlowWire = ({ orientation = 'horizontal' }: { orientation?: 'horizontal' |
 
 export default function TechStack() {
   return (
-    <section id="skills" className="py-32 w-full relative">
+    <section id="tech-stack" className="py-32 w-full relative">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <ScrollReveal className="text-center mb-24">
           <h2 className="font-mono text-[var(--accent)] tracking-wider text-sm font-semibold uppercase mb-4">04. Tech Stack</h2>
