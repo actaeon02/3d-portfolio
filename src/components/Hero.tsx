@@ -32,7 +32,7 @@ export default function Hero() {
   }, [currentText, isDeleting, currentRoleIndex, roles]);
 
   return (
-    <section className="relative min-h-screen w-full flex items-center justify-center pt-20 overflow-hidden">
+    <section id="hero-section" className="relative min-h-screen w-full flex items-center justify-center pt-20 overflow-hidden">
       
       {/* Subtle Data Dot Grid Background */}
       <div 
@@ -45,7 +45,7 @@ export default function Hero() {
       {/* Radial fade to seamlessly blend into the background colors at the edges */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,var(--bg-color)_80%)]" />
 
-      <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10">
+      <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center z-10">
         
         {/* Left Content */}
         <div className="flex flex-col space-y-6">
@@ -112,11 +112,11 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* Floating scroll indicator */}
+      {/* Floating scroll indicator - Hidden on mobile to prevent stacking with buttons */}
       <motion.div
         animate={{ y: [0, 12, 0] }}
         transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center text-muted hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center text-muted hover:text-[var(--text-primary)] transition-colors cursor-pointer"
         onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
       >
         <ArrowDown className="w-6 h-6 opacity-80" />

@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float, RoundedBox, Sphere, Cylinder, Environment } from '@react-three/drei';
 import * as THREE from 'three';
@@ -10,42 +10,114 @@ function RobotAvatar() {
   const leftArmRef = useRef<THREE.Group>(null);
   const { theme } = useTheme();
   const timeRef = useRef(0);
+  const walkIntensityRef = useRef(1); // Lerped intensity for smooth transitions
 
-  // Premium muted tech colors adapting to light/dark mode
-  const mainColor = theme === 'dark' ? '#1c1917' : '#e7e5e4'; // Neutral dark/light
+  const globalMouse = useRef(new THREE.Vector2(0, 0));
+  const isTargetingRef = useRef(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const heroEl = document.getElementById('hero-section');
+      if (!heroEl) return;
+      
+      const rect = heroEl.getBoundingClientRect();
+      const isInside = (
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom
+      );
+      
+      isTargetingRef.current = isInside;
+      
+      if (isInside) {
+        // Calculate normalized coordinates (-1 to +1) relative to the hero section
+        globalMouse.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        globalMouse.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      }
+    };
+    
+    const handleMouseLeave = () => {
+      isTargetingRef.current = false;
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  // Premium colors
+  const mainColor = theme === 'dark' ? '#1c1917' : '#e7e5e4';
   const jointColor = theme === 'dark' ? '#44403c' : '#a8a29e'; 
-  const accentColor = theme === 'dark' ? '#38bdf8' : '#0ea5e9'; // Sky blue glowing accent
+  const accentColor = theme === 'dark' ? '#38bdf8' : '#0ea5e9';
 
   useFrame((state, delta) => {
     timeRef.current += delta;
     const t = timeRef.current;
 
-    if (groupRef.current) {
-      // Interactive: Look at the mouse cursor
-      const targetX = (state.pointer.x * Math.PI) / 3;
-      const targetY = (state.pointer.y * Math.PI) / 4;
+    const isTargeting = isTargetingRef.current;
 
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.1);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -targetY, 0.1);
+    // Smoothly transition walk intensity
+    const targetIntensity = isTargeting ? 0 : 1;
+    walkIntensityRef.current = THREE.MathUtils.lerp(walkIntensityRef.current, targetIntensity, 0.05);
+    const intensity = walkIntensityRef.current;
+
+    // Head/Body Look Logic
+    const lerpFactor = 0.08;
+    const targetLookX = isTargeting ? -(globalMouse.current.y * Math.PI) / 6 : 0;
+    const targetLookY = isTargeting ? (globalMouse.current.x * Math.PI) / 3 : 0;
+
+    if (groupRef.current) {
+      // Rotation: Combine Look + Walk Sway
+      // Walk Sway: subtle Z-tilt and Y-bounce
+      const walkSwayZ = Math.sin(t * 2) * 0.05 * intensity;
+      const walkLeanX = Math.cos(t * 2) * 0.02 * intensity; // Forward/backward lean
+
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetLookX + walkLeanX, lerpFactor);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetLookY, lerpFactor);
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, walkSwayZ, lerpFactor);
+
+      // Position: Walk Bobbing
+      const walkY = Math.sin(t * 4) * 0.15 * intensity; // Faster bob for "walking" feel
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, -0.5 + walkY, 0.1);
       
-      // Gentle breathing animation (scaling)
-      groupRef.current.scale.y = 1 + Math.sin(t * 2) * 0.015;
-      groupRef.current.scale.x = 1 - Math.sin(t * 2) * 0.01;
+      // Breathing scaling (always active, but subtly influenced by walk)
+      const breathe = Math.sin(t * 2) * 0.015;
+      groupRef.current.scale.y = 1 + breathe;
+      groupRef.current.scale.x = 1 - breathe * 0.5;
     }
 
     if (rightArmRef.current && leftArmRef.current) {
-      // Right arm floating and slightly waving
-      rightArmRef.current.rotation.z = Math.sin(t * 2) * 0.15 - 0.2;
-      rightArmRef.current.position.y = Math.sin(t * 2.5) * 0.1 - 0.2;
+      // Arm Swings (Inverse of each other)
+      // We swing on X for forward/back, and a bit on Z for wide movement
+      const swingSpeed = 4;
+      const swingX = Math.sin(t * swingSpeed) * 0.5 * intensity;
+      const swingZ = (Math.cos(t * swingSpeed * 0.5) * 0.1 + 0.1) * intensity;
       
-      // Left arm floating gently
-      leftArmRef.current.position.y = Math.cos(t * 2.2) * 0.1 - 0.2;
-      leftArmRef.current.rotation.z = Math.cos(t * 1.8) * 0.1 + 0.2;
+      // Offset arms slightly outwards as default
+      const defaultRotZ = 0.2;
+
+      // Right Arm
+      rightArmRef.current.rotation.x = THREE.MathUtils.lerp(rightArmRef.current.rotation.x, swingX, 0.1);
+      rightArmRef.current.rotation.z = THREE.MathUtils.lerp(rightArmRef.current.rotation.z, -defaultRotZ - swingZ, 0.1);
+      
+      // Left Arm
+      leftArmRef.current.rotation.x = THREE.MathUtils.lerp(leftArmRef.current.rotation.x, -swingX, 0.1);
+      leftArmRef.current.rotation.z = THREE.MathUtils.lerp(leftArmRef.current.rotation.z, defaultRotZ + swingZ, 0.1);
+
+      // Subtle arm floating (independent of walk)
+      const armFloat = Math.sin(t * 2) * 0.05;
+      rightArmRef.current.position.y = armFloat - 0.2;
+      leftArmRef.current.position.y = -armFloat - 0.2;
     }
   });
 
   return (
-    <Float speed={2} rotationIntensity={0.2} floatIntensity={1.5}>
+    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
       <group ref={groupRef} position={[0, -0.5, 0]}>
         
         {/* --- Head --- */}
@@ -180,7 +252,7 @@ function FloatingDataBits() {
 export default function ThreeScene() {
   return (
     <div className="w-full h-full relative cursor-move pointer-events-auto">
-      <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
+      <Canvas camera={{ position: [0, 0, 7.5], fov: 45 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.5} />
         <pointLight position={[-10, -10, -5]} intensity={1} />

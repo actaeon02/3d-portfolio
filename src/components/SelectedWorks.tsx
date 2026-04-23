@@ -43,8 +43,8 @@ export default function SelectedWorks() {
                 {/* Visual Image */}
                 <img 
                   src={index === 0 
-                    ? 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' 
-                    : 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+                    ? '/src/assets/images/data_pipeline_schematic_1776927661689.png' 
+                    : '/src/assets/images/retail_analytics_visualization_1776927683270.png'
                   }
                   alt={project.title}
                   referrerPolicy="no-referrer"
