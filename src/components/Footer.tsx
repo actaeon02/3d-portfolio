@@ -2,7 +2,11 @@ import ScrollReveal from './ScrollReveal';
 import { Github, Linkedin, Mail } from 'lucide-react';
 import { SOCIAL_LINKS, PERSONAL_INFO } from '../constants';
 
-export default function Footer() {
+interface FooterProps {
+  onContactClick?: () => void;
+}
+
+export default function Footer({ onContactClick }: FooterProps) {
   return (
     <footer className="w-full py-16 border-t border-subtle">
       <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
@@ -13,12 +17,21 @@ export default function Footer() {
             <h2 className="text-3xl md:text-5xl font-medium tracking-tight">Let's build something data-driven.</h2>
           </div>
 
-          <a 
-            href={`mailto:${SOCIAL_LINKS.email}`} 
-            className="inline-block bg-[var(--text-primary)] text-[var(--bg-color)] px-8 py-4 rounded-full font-medium text-lg hover:scale-105 transition-transform"
-          >
-            Say Hello
-          </a>
+          {onContactClick ? (
+            <button 
+              onClick={onContactClick}
+              className="inline-block bg-[var(--text-primary)] text-[var(--bg-color)] px-8 py-4 rounded-full font-medium text-lg hover:scale-105 transition-transform"
+            >
+              Say Hello
+            </button>
+          ) : (
+            <a 
+              href={`mailto:${SOCIAL_LINKS.email}`} 
+              className="inline-block bg-[var(--text-primary)] text-[var(--bg-color)] px-8 py-4 rounded-full font-medium text-lg hover:scale-105 transition-transform"
+            >
+              Say Hello
+            </a>
+          )}
 
           <div className="flex justify-center space-x-6 pt-12">
             <a 

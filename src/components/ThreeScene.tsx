@@ -1,8 +1,29 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Float, RoundedBox, Sphere, Cylinder, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
+
+function CameraManager() {
+  const { camera, size } = useThree();
+  
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    
+    // Smoothly adjust camera Z depending on aspect ratio to prevent clipping arms on narrow screens
+    if (aspect < 0.7) {
+      camera.position.z = 11;
+    } else if (aspect < 1) {
+      camera.position.z = 9.5;
+    } else if (aspect < 1.3) {
+      camera.position.z = 8.5;
+    } else {
+      camera.position.z = 7.5;
+    }
+  }, [size, camera]);
+  
+  return null;
+}
 
 function RobotAvatar() {
   const groupRef = useRef<THREE.Group>(null);
@@ -253,12 +274,13 @@ export default function ThreeScene() {
   return (
     <div className="w-full h-full relative cursor-move pointer-events-auto">
       <Canvas camera={{ position: [0, 0, 7.5], fov: 45 }}>
+        <CameraManager />
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 5]} intensity={1.5} />
         <pointLight position={[-10, -10, -5]} intensity={1} />
         
         {/* Environment mapping gives the metallic robot realistic reflections without heavy lighting setups */}
-        <Environment preset="city" opacity={0.2} />
+        <Environment preset="city" />
 
         <RobotAvatar />
         <FloatingDataBits />

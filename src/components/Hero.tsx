@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowDown, Box } from 'lucide-react';
 import ThreeScene from './ThreeScene';
 import { PERSONAL_INFO } from '../constants';
 
-export default function Hero() {
+interface HeroProps {
+  onContactClick?: () => void;
+}
+
+export default function Hero({ onContactClick }: HeroProps) {
   const roles = ["Data Engineer", "BI Developer", "Web Developer"];
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
@@ -45,10 +50,10 @@ export default function Hero() {
       {/* Radial fade to seamlessly blend into the background colors at the edges */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,var(--bg-color)_80%)]" />
 
-      <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center z-10">
+      <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10 h-full pt-10">
         
         {/* Left Content */}
-        <div className="flex flex-col space-y-6">
+        <div className="flex flex-col space-y-6 lg:max-w-xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,21 +88,22 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="pt-4 flex gap-4"
+            className="pt-4 flex flex-wrap gap-4"
           >
             <a 
               href="/resume.pdf" 
               download={PERSONAL_INFO.resumeName}
-              className="bg-[var(--text-primary)] text-[var(--bg-color)] px-6 py-3 rounded-full font-medium hover:scale-105 transition-transform"
+              className="bg-[var(--text-primary)] text-[var(--bg-color)] px-6 py-3 rounded-full font-medium hover:scale-105 transition-transform flex items-center gap-2"
             >
               My Resume
             </a>
-            <a 
-              href="#projects" 
-              className="border border-subtle px-6 py-3 rounded-full font-medium hover:bg-[var(--text-secondary)]/5 transition-colors"
+            <Link 
+              to="/freelance" 
+              className="border border-[var(--accent)] text-[var(--accent)] px-6 py-3 rounded-full font-medium hover:bg-[var(--accent)]/10 transition-colors flex items-center gap-2 group"
             >
-              System Designs
-            </a>
+              <Box className="w-4 h-4 transition-transform group-hover:rotate-12" />
+              Web Portfolio
+            </Link>
           </motion.div>
         </div>
 
@@ -106,7 +112,7 @@ export default function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="h-[400px] md:h-[600px] w-full hidden md:block" // Hidden on very small screens to save space as requested
+          className="h-[400px] md:h-[500px] lg:h-[600px] w-full hidden md:block" // Hidden on mobile, visible on tablet/desktop
         >
           <ThreeScene />
         </motion.div>

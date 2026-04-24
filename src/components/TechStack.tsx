@@ -91,7 +91,6 @@ export default function TechStack() {
               {/* Stage Card */}
               <div className="w-full lg:flex-1 flex flex-col z-10">
                 <ScrollReveal 
-                  delay={idx * 0.15} 
                   className="h-full"
                 >
                   <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-alt)]/30 backdrop-blur-sm h-full hover:border-[var(--accent)]/40 hover:bg-[var(--bg-alt)]/60 transition-all duration-500 shadow-sm hover:shadow-xl group/card relative overflow-hidden">
