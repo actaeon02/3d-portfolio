@@ -1,4 +1,4 @@
-import { useRef, MouseEvent, useState, useEffect, useCallback } from 'react';
+import { useRef, MouseEvent, useState, useEffect } from 'react';
 import { motion, useSpring, useTransform, useMotionValue } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
@@ -31,14 +31,18 @@ const creativeProjects = [
   }
 ];
 
-// --- Camera Controller ---
+// --- NEW: Camera Controller ---
+// This drives the camera forward along the Z-axis based on scroll progress
 function CameraRig() {
   const scroll = useDreiScroll();
   
   useFrame((state) => {
+    // scroll.offset goes from 0 (top) to 1 (bottom)
+    // We fly from Z=5 down to Z=-30 so we never fly past the final objects (no abyss)
     const targetZ = THREE.MathUtils.lerp(5, -30, scroll.offset);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.1);
     
+    // Add a slight tilt to the camera for a "floating" feel as we move
     const targetRotZ = Math.sin(scroll.offset * Math.PI * 2) * 0.05;
     state.camera.rotation.z = THREE.MathUtils.lerp(state.camera.rotation.z, targetRotZ, 0.1);
   });
@@ -57,14 +61,17 @@ function ScrollBackground() {
     const t = timeRef.current;
 
     if (groupRef.current) {
+      // The central core object slowly rotates
       groupRef.current.rotation.y = t * 0.1;
       groupRef.current.rotation.x = t * 0.05;
     }
 
     if (particlesRef.current) {
+      // Smoothly move each particle forward along Z axis
       particlesRef.current.children.forEach((child) => {
-        child.position.z += delta * 5;
+        child.position.z += delta * 5; // Reduced speed for a more cinematic feel
         if (child.position.z > 20) {
+          // Send it back deep into the scene once it passes the camera
           child.position.z -= 100;
         }
       });
@@ -78,16 +85,24 @@ function ScrollBackground() {
       <directionalLight position={[10, 10, 5]} intensity={1.5} color="#cbd5e1" />
       <spotLight position={[-10, -10, -5]} intensity={1.5} color="#4f46e5" />
       
+      {/* 
+        Central Core / "Server Architecture" 
+        Positioned at Z=-45 so the camera (stopping at -30) always has something epic ahead of it
+        Scaled up to remain imposing even from the beginning of the scroll
+      */}
       <group ref={groupRef} position={[0, -0.5, -40]} scale={1.8}>
         <Float speed={1.5} rotationIntensity={1} floatIntensity={1.5}>
+          {/* Grid Cube */}
           <mesh scale={5}>
             <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
             <meshStandardMaterial color="#334155" transparent opacity={0.05} wireframe roughness={0.1} />
           </mesh>
+          {/* Inner Data Core */}
           <mesh scale={2.5}>
             <octahedronGeometry args={[1, 1]} />
             <meshStandardMaterial color="#000000" emissive="#4f46e5" emissiveIntensity={0.3} wireframe />
           </mesh>
+          {/* Core Hardware */}
           <mesh scale={1}>
             <boxGeometry args={[1, 1, 1]} />
             <meshStandardMaterial color="#020617" roughness={0.05} metalness={1} />
@@ -95,6 +110,7 @@ function ScrollBackground() {
         </Float>
       </group>
 
+      {/* Floating UI Panels / Screens mapping the "Creative Web" layout */}
       <group ref={screensRef}>
         {Array.from({ length: 45 }).map((_, i) => {
           const zPos = 5 - i * 1.2; 
@@ -112,6 +128,7 @@ function ScrollBackground() {
               ]}
             >
               <mesh rotation={[0, (Math.random() - 0.5) * 0.3, 0]}>
+                {/* 16:9 Aspect ratio planes for web interfaces */}
                 <planeGeometry args={[Math.random() * 2 + 1, (Math.random() * 2 + 1) * 0.56]} />
                 <meshStandardMaterial 
                   color={isHighlight ? "#4f46e5" : "#334155"} 
@@ -126,6 +143,7 @@ function ScrollBackground() {
         })}
       </group>
 
+      {/* Data Streams */}
       <group ref={particlesRef}>
         {Array.from({ length: 200 }).map((_, i) => (
           <mesh 
@@ -136,6 +154,7 @@ function ScrollBackground() {
               (Math.random() - 0.5) * 100 - 30 
             ]}
           >
+            {/* Long thin boxes acting as high-speed data trails */}
             <boxGeometry args={[0.015, 0.015, Math.random() * 5 + 1]} />
             <meshBasicMaterial color={i % 2 === 0 ? "#475569" : "#4f46e5"} transparent opacity={Math.random() * 0.3 + 0.05} />
           </mesh>
@@ -145,6 +164,7 @@ function ScrollBackground() {
   );
 }
 
+// 3D Tilt Experience Block - Untouched, it works perfectly inside Scroll HTML
 function ExperienceBlock({ project, index }: { project: typeof creativeProjects[0], index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   
@@ -233,106 +253,22 @@ function ExperienceBlock({ project, index }: { project: typeof creativeProjects[
 
 export default function InteractivePortfolio() {
   const { openContact } = useContact();
-  const [pages, setPages] = useState(5); // Start with a default value
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [pages, setPages] = useState(creativeProjects.length + 1.8);
 
-  // Force a fixed pages calculation based on content sections
-  const calculateFixedPages = useCallback(() => {
-    if (!scrollContainerRef.current) return 5;
-    
-    // Count the number of sections (hero + projects + footer)
-    const sections = scrollContainerRef.current.children;
-    let sectionCount = 0;
-    
-    // Count how many full-screen sections we have
-    for (let i = 0; i < sections.length; i++) {
-      const section = sections[i] as HTMLElement;
-      if (section.classList.contains('full-screen-section')) {
-        sectionCount++;
-      }
-    }
-    
-    // If we couldn't find sections with the class, use a manual count
-    if (sectionCount === 0) {
-      // Hero (1) + Projects (3) + Footer (1) = 5 sections minimum
-      sectionCount = 5;
-    }
-    
-    // Add a small buffer for smooth scrolling
-    return sectionCount + 0.2;
-  }, []);
-
-  // Update pages based on actual DOM and ensure we don't overscroll
-  const updatePages = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const htmlContent = scrollContainerRef.current;
-      const scrollHeight = htmlContent.scrollHeight;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate exact pages needed
-      let calculatedPages = scrollHeight / viewportHeight;
-      
-      // CRITICAL FIX: Ensure we don't add extra buffer that causes overscroll
-      // Use exact calculation with minimal rounding
-      calculatedPages = Math.ceil(calculatedPages * 100) / 100;
-      
-      // Set the pages with NO extra buffer
-      setPages(calculatedPages);
-      
-      console.log(`EXACT PAGES: ${calculatedPages} (Scroll: ${scrollHeight}, Viewport: ${viewportHeight})`);
-    } else {
-      // Fallback based on number of projects
-      const basePages = creativeProjects.length + 2; // Hero + Projects + Footer
-      setPages(basePages + 0.1);
-    }
-  }, []);
-
-  // Debounced resize handler
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
     const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        updatePages();
-      }, 100);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    // Also update on orientation change for mobile
-    window.addEventListener('orientationchange', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-      clearTimeout(timeoutId);
-    };
-  }, [updatePages]);
-
-  // Initial calculation after mount
-  useEffect(() => {
-    // Small delay to ensure DOM is fully rendered
-    const timer = setTimeout(() => {
-      updatePages();
-      
-      // Also set up a mutation observer to detect content changes
-      if (scrollContainerRef.current) {
-        const observer = new MutationObserver(() => {
-          updatePages();
-        });
-        
-        observer.observe(scrollContainerRef.current, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['style', 'class']
-        });
-        
-        return () => observer.disconnect();
+      if (window.innerWidth < 640) {
+        setPages(creativeProjects.length * 1.5 + 2.2);
+      } else if (window.innerWidth < 1024) {
+        setPages(creativeProjects.length * 1.3 + 2.0);
+      } else {
+        setPages(creativeProjects.length + 1.8);
       }
-    }, 200);
-    
-    return () => clearTimeout(timer);
-  }, [updatePages]);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div 
@@ -348,15 +284,7 @@ export default function InteractivePortfolio() {
         canvas + div::-webkit-scrollbar {
           display: none !important;
         }
-        body { 
-          overflow: hidden !important;
-          margin: 0;
-          padding: 0;
-        }
-        .scroll-html-container {
-          height: auto !important;
-          min-height: 100vh;
-        }
+        body { overflow: hidden !important; }
       `}</style>
       
       {/* Absolute Nav (Outside Canvas to stay fixed above everything) */}
@@ -373,85 +301,80 @@ export default function InteractivePortfolio() {
 
       {/* The entire application is now driven by the Canvas and ScrollControls */}
       <Canvas camera={{ position: [0, 0, 5], fov: 40 }}>
-        <ScrollControls damping={0.15} pages={pages} maxSpeed={1.2} infinite={false}>
+        {/* damping makes the scroll smooth, pages defines how long the scroll is */}
+        <ScrollControls damping={0.25} pages={pages}>
+          
+          {/* 3D Scene */}
           <CameraRig />
           <ScrollBackground />
 
+          {/* HTML Overlay mapped to Scroll */}
           <Scroll html style={{ width: '100vw' }}>
-            <div 
-              ref={scrollContainerRef} 
-              className="scroll-html-container"
-              style={{
-                width: '100%',
-                minHeight: '100vh',
-                position: 'relative'
-              }}
-            >
-              {/* Cinematic Hero - Added class for detection */}
-              <section className="relative h-screen flex flex-col items-center justify-center text-center px-6 full-screen-section">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="space-y-8 max-w-5xl flex flex-col items-center"
-                >
-                  <div className="inline-block border border-white/20 bg-white/10 backdrop-blur-xl px-6 py-2 rounded-full text-white text-[10px] font-mono tracking-[0.5em] uppercase mb-6 shadow-2xl">
-                    Strategic Design • Data Visualization
-                  </div>
-                  <h1 className="text-6xl md:text-[8rem] font-bold tracking-tight text-white leading-[0.9] uppercase">
-                    Digital <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400">Exhibition</span>
-                  </h1>
-                  <p className="text-xs md:text-sm text-slate-200 max-w-2xl mx-auto font-mono leading-relaxed mt-10 tracking-[0.6em] uppercase">
-                    Immersive Software Architecture
-                  </p>
-                </motion.div>
+            
+            {/* Cinematic Hero */}
+            <section className="relative h-screen flex flex-col items-center justify-center text-center px-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-8 max-w-5xl flex flex-col items-center"
+              >
+                <div className="inline-block border border-white/20 bg-white/10 backdrop-blur-xl px-6 py-2 rounded-full text-white text-[10px] font-mono tracking-[0.5em] uppercase mb-6 shadow-2xl">
+                  Strategic Design • Data Visualization
+                </div>
+                <h1 className="text-6xl md:text-[8rem] font-bold tracking-tight text-white leading-[0.9] uppercase">
+                  Digital <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400">Exhibition</span>
+                </h1>
+                <p className="text-xs md:text-sm text-slate-200 max-w-2xl mx-auto font-mono leading-relaxed mt-10 tracking-[0.6em] uppercase">
+                  Immersive Software Architecture
+                </p>
+              </motion.div>
 
-                <motion.div 
-                  animate={{ y: [0, 15, 0], opacity: [0.1, 0.3, 0.1] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute bottom-12 text-slate-500/40 flex flex-col items-center gap-4"
-                >
-                  <span className="text-[10px] font-mono tracking-[0.4em] uppercase">Begin Transmission</span>
-                  <div className="w-[1px] h-20 bg-gradient-to-b from-slate-500/60 to-transparent" />
-                </motion.div>
-              </section>
+              <motion.div 
+                animate={{ y: [0, 15, 0], opacity: [0.1, 0.3, 0.1] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                className="absolute bottom-12 text-slate-500/40 flex flex-col items-center gap-4"
+              >
+                <span className="text-[10px] font-mono tracking-[0.4em] uppercase">Begin Transmission</span>
+                <div className="w-[1px] h-20 bg-gradient-to-b from-slate-500/60 to-transparent" />
+              </motion.div>
+            </section>
 
-              {/* Exhibition pieces */}
-              <div className="w-full relative z-20">
-                {creativeProjects.map((project, index) => (
-                  <ExperienceBlock key={project.id} project={project} index={index} />
-                ))}
-              </div>
-
-              {/* Minimalist CTA / Footer - Added class for detection */}
-              <section className="relative h-screen flex flex-col items-center justify-center text-center px-6 z-20 overflow-visible full-screen-section">
-                <motion.div
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  viewport={{ once: false, margin: "-50px" }}
-                  className="space-y-12 relative z-30 flex flex-col items-center w-full"
-                >
-                  <h2 className="text-6xl md:text-9xl font-bold tracking-tighter text-white drop-shadow-2xl font-sans">
-                    Next <span className="text-slate-400">Epoch.</span>
-                  </h2>
-                  <p className="text-2xl md:text-3xl text-slate-200 max-w-lg mx-auto font-light tracking-wide italic px-4">
-                    Available for strategic partnerships and high-impact software engineering.
-                  </p>
-                  <div className="pt-10 flex flex-col gap-6 items-center pointer-events-auto">
-                    <button 
-                      onClick={openContact}
-                      className="group relative inline-flex items-center justify-center h-16 px-14 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl"
-                    >
-                      <span className="relative z-10 font-mono tracking-widest text-xs">Initiate Project</span>
-                      <div className="absolute inset-0 bg-slate-200 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-                    </button>
-                  </div>
-                </motion.div>
-              </section>
-              
+            {/* Exhibition pieces */}
+            <div className="w-full relative z-20">
+              {creativeProjects.map((project, index) => (
+                <ExperienceBlock key={project.id} project={project} index={index} />
+              ))}
             </div>
+
+            {/* Minimalist CTA / Footer */}
+            <section className="relative h-[80vh] flex flex-col items-center justify-center text-center px-6 z-20 overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                viewport={{ once: false }}
+                className="space-y-12 relative z-30 flex flex-col items-center"
+              >
+                <h2 className="text-6xl md:text-9xl font-bold tracking-tighter text-white drop-shadow-2xl font-sans">
+                  Next <span className="text-slate-400">Epoch.</span>
+                </h2>
+                <p className="text-2xl md:text-3xl text-slate-200 max-w-lg mx-auto font-light tracking-wide italic">
+                  Available for strategic partnerships and high-impact software engineering.
+                </p>
+                <div className="pt-10 flex flex-col gap-6 items-center pointer-events-auto">
+                  <button 
+                    onClick={openContact}
+                    className="group relative inline-flex items-center justify-center h-16 px-14 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl"
+                  >
+                    <span className="relative z-10 font-mono tracking-widest text-xs">Initiate Project</span>
+                    <div className="absolute inset-0 bg-slate-200 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+                  </button>
+                </div>
+              </motion.div>
+            </section>
+
           </Scroll>
         </ScrollControls>
       </Canvas>
