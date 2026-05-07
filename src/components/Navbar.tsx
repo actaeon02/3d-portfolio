@@ -5,16 +5,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { useContact } from '../context/ContactContext';
 import { PERSONAL_INFO } from '../constants';
 
+import { useLoading } from '../context/LoadingContext';
+
 const navLinks = [
   { name: 'About', href: '/#about' },
   { name: 'Experience', href: '/#experience' },
   { name: 'Designs', href: '/#projects' },
   { name: 'Tech', href: '/#tech-stack' },
-  { name: 'Web Portfolio', href: '/freelance' }
+  { name: 'Creative Mode', href: '/freelance' }
 ];
 
 export default function Navbar() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [activeSection, setActiveSection] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -53,10 +55,10 @@ export default function Navbar() {
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out px-4 py-4 md:px-8 ${
       scrolled ? 'pt-4' : 'pt-8'
     }`}>
-      <div className={`max-w-5xl mx-auto flex items-center justify-between transition-all duration-500 px-6 py-2 rounded-full ${
+      <div className={`max-w-5xl mx-auto flex items-center justify-between transition-all duration-500 px-6 py-2 rounded-full border ${
         scrolled 
-          ? 'bg-[var(--bg-color)]/80 backdrop-blur-xl border border-[var(--text-secondary)]/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]' 
-          : 'bg-transparent border border-transparent'
+          ? 'bg-[var(--bg-color)]/80 backdrop-blur-xl border-[var(--text-secondary)]/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]' 
+          : 'bg-[var(--bg-color)]/30 backdrop-blur-md border-[var(--text-secondary)]/20 shadow-sm'
       }`}>
         <Link 
           to="/" 
@@ -107,15 +109,8 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="flex items-center">
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-full hover:bg-[var(--text-secondary)]/10 transition-all active:scale-95 text-[var(--text-primary)]"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
+        {/* Dummy spacer to balance justify-between and perfectly center the nav links */}
+        <div className="w-9 hidden md:block" aria-hidden="true" />
       </div>
     </nav>
   );
