@@ -1,78 +1,68 @@
-import { useRef, MouseEvent, useState, useEffect } from 'react';
-import { motion, useSpring, useTransform, useMotionValue } from 'motion/react';
+import { useRef, useState, useEffect, useMemo, Suspense } from 'react';
+import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Environment, ScrollControls, Scroll, useScroll as useDreiScroll } from '@react-three/drei';
+import { Environment, Float, Text, useProgress } from '@react-three/drei';
+import { EffectComposer, Bloom, Noise, ChromaticAberration } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useContact } from '../context/ContactContext';
+import { freelanceProjects } from '../data/freelanceProjects';
+import ExperienceBlock from '../components/ExperienceBlock';
+import Footer from '../components/Footer';
 
-const creativeProjects = [
-  {
-    id: 1,
-    title: 'Liquid Finance',
-    role: 'WebGL • React • WebSockets',
-    description: 'A high-performance trading dashboard utilizing WebGL for rendering thousands of data points at 60fps with real-time data integration.',
-    image: '/src/assets/images/data_pipeline_schematic_1776927661689.png',
-  },
-  {
-    id: 2,
-    title: 'Nexus E-Commerce',
-    role: 'Three.js • Next.js • Motion',
-    description: 'Award-winning interactive retail experience. Users navigate a 3D product landscape seamlessly integrated with a modern shopping cart.',
-    image: '/src/assets/images/retail_analytics_visualization_1776927683270.png',
-  },
-  {
-    id: 3,
-    title: 'Aura Architecture',
-    role: 'Headless CMS • React • GSAP',
-    description: 'A visually driven portfolio for an international architectural firm, featuring complex scroll-triggered animations and fluid page transitions.',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-  }
-];
 
-// --- NEW: Camera Controller ---
-// This drives the camera forward along the Z-axis based on scroll progress
-function CameraRig() {
-  const scroll = useDreiScroll();
-  
-  useFrame((state) => {
-    // scroll.offset goes from 0 (top) to 1 (bottom)
-    // We fly from Z=5 down to Z=-30 so we never fly past the final objects (no abyss)
-    const targetZ = THREE.MathUtils.lerp(5, -30, scroll.offset);
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.1);
-    
-    // Add a slight tilt to the camera for a "floating" feel as we move
-    const targetRotZ = Math.sin(scroll.offset * Math.PI * 2) * 0.05;
-    state.camera.rotation.z = THREE.MathUtils.lerp(state.camera.rotation.z, targetRotZ, 0.1);
-  });
 
-  return null;
-}
-
-function ScrollBackground() {
+// --- Adaptive 3D Background (Synced to Window Scroll) ---
+function ScrollBackground({ scrollProgress, featuredCount }: { scrollProgress: any, featuredCount: number }) {
   const groupRef = useRef<THREE.Group>(null);
   const particlesRef = useRef<THREE.Group>(null);
   const screensRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
 
+  const particleCount = Math.min(featuredCount * 25, 150);
+  const screenCount = Math.min(featuredCount * 8, 40);
+
+  const screenData = useMemo(() => {
+    return Array.from({ length: screenCount }).map((_, i) => ({
+      position: [
+        (Math.random() - 0.5) * 25,
+        (Math.random() - 0.5) * 20,
+        -(i * 3)
+      ],
+      rotation: [0, (Math.random() - 0.5) * 0.8, 0],
+      scale: Math.random() * 1.5 + 0.5,
+      isHighlight: i % 4 === 0
+    }));
+  }, [screenCount]);
+
   useFrame((state, delta) => {
     timeRef.current += delta;
     const t = timeRef.current;
+    const progress = scrollProgress.get();
 
+    // 1. Linear journey: Consistent zoom from top to bottom.
+    const cameraZ = 12 - (progress * 55);
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, cameraZ, 0.08);
+
+    // 2. Parallax: Centerpiece moves consistently
     if (groupRef.current) {
-      // The central core object slowly rotates
-      groupRef.current.rotation.y = t * 0.1;
-      groupRef.current.rotation.x = t * 0.05;
+      groupRef.current.rotation.y = t * 0.05 + (progress * 0.4);
+      groupRef.current.rotation.x = Math.sin(t * 0.2) * 0.05;
+      groupRef.current.position.z = -30 - (progress * 20);
+    }
+
+    // 3. Float the screens/planes
+    if (screensRef.current) {
+      screensRef.current.rotation.y = Math.sin(t * 0.1) * 0.05;
+      screensRef.current.position.y = Math.cos(t * 0.3) * 0.2;
     }
 
     if (particlesRef.current) {
-      // Smoothly move each particle forward along Z axis
       particlesRef.current.children.forEach((child) => {
-        child.position.z += delta * 5; // Reduced speed for a more cinematic feel
-        if (child.position.z > 20) {
-          // Send it back deep into the scene once it passes the camera
-          child.position.z -= 100;
+        child.position.z += delta * 15;
+        if (child.position.z > state.camera.position.z + 20) {
+          child.position.z -= 200;
         }
       });
     }
@@ -81,303 +71,213 @@ function ScrollBackground() {
   return (
     <group>
       <Environment preset="city" />
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 10, 5]} intensity={1.5} color="#cbd5e1" />
-      <spotLight position={[-10, -10, -5]} intensity={1.5} color="#4f46e5" />
-      
-      {/* 
-        Central Core / "Server Architecture" 
-        Positioned at Z=-45 so the camera (stopping at -30) always has something epic ahead of it
-        Scaled up to remain imposing even from the beginning of the scroll
-      */}
-      <group ref={groupRef} position={[0, -0.5, -40]} scale={1.8}>
-        <Float speed={1.5} rotationIntensity={1} floatIntensity={1.5}>
-          {/* Grid Cube */}
-          <mesh scale={5}>
-            <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-            <meshStandardMaterial color="#334155" transparent opacity={0.05} wireframe roughness={0.1} />
+      <ambientLight intensity={0.2} />
+      <spotLight position={[-10, -10, -5]} intensity={2} color="#4f46e5" />
+
+      <group ref={groupRef} position={[0, -0.5, -20]} scale={2.5}>
+        <Float speed={2} rotationIntensity={1} floatIntensity={2}>
+          {/* Internal Glow Source */}
+          <pointLight intensity={8} distance={15} color="#4f46e5" />
+
+          {/* Kinetic Outer Ring 01 */}
+          <mesh rotation={[Math.PI / 4, 0, 0]}>
+            <torusGeometry args={[1.8, 0.015, 16, 100]} />
+            <meshStandardMaterial color="#ffffff" transparent opacity={0.3} />
           </mesh>
-          {/* Inner Data Core */}
-          <mesh scale={2.5}>
-            <octahedronGeometry args={[1, 1]} />
-            <meshStandardMaterial color="#000000" emissive="#4f46e5" emissiveIntensity={0.3} wireframe />
+
+          {/* Kinetic Outer Ring 02 */}
+          <mesh rotation={[-Math.PI / 4, Math.PI / 4, 0]}>
+            <torusGeometry args={[2.2, 0.01, 16, 100]} />
+            <meshStandardMaterial color="#4f46e5" transparent opacity={0.2} />
           </mesh>
-          {/* Core Hardware */}
-          <mesh scale={1}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial color="#020617" roughness={0.05} metalness={1} />
+
+          {/* Glitchy Wireframe Shell */}
+          <mesh scale={1.1}>
+            <icosahedronGeometry args={[1.2, 1]} />
+            <meshStandardMaterial color="#4f46e5" wireframe transparent opacity={0.05} />
           </mesh>
         </Float>
       </group>
 
-      {/* Floating UI Panels / Screens mapping the "Creative Web" layout */}
       <group ref={screensRef}>
-        {Array.from({ length: 45 }).map((_, i) => {
-          const zPos = 5 - i * 1.2; 
-          const isHighlight = i % 4 === 0;
-          return (
-            <Float 
-              key={`screen-${i}`}
-              speed={0.8 + Math.random() * 0.5} 
-              rotationIntensity={0.05} 
-              floatIntensity={0.3}
-              position={[
-                (Math.random() - 0.5) * 18, 
-                (Math.random() - 0.5) * 14, 
-                zPos
-              ]}
-            >
-              <mesh rotation={[0, (Math.random() - 0.5) * 0.3, 0]}>
-                {/* 16:9 Aspect ratio planes for web interfaces */}
-                <planeGeometry args={[Math.random() * 2 + 1, (Math.random() * 2 + 1) * 0.56]} />
-                <meshStandardMaterial 
-                  color={isHighlight ? "#4f46e5" : "#334155"} 
-                  transparent 
-                  opacity={isHighlight ? 0.15 : 0.05} 
-                  wireframe={!isHighlight} 
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            </Float>
-          );
-        })}
+        {screenData.map((data, i) => (
+          <Float key={`screen-${i}`} speed={1} position={data.position as [number, number, number]}>
+            <mesh rotation={data.rotation as [number, number, number]}>
+              <planeGeometry args={[data.scale, data.scale * 0.56]} />
+              <meshStandardMaterial
+                color={data.isHighlight ? "#4f46e5" : "#1e293b"}
+                transparent
+                opacity={data.isHighlight ? 0.15 : 0.03}
+                wireframe={!data.isHighlight}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          </Float>
+        ))}
       </group>
 
-      {/* Data Streams */}
       <group ref={particlesRef}>
-        {Array.from({ length: 200 }).map((_, i) => (
-          <mesh 
-            key={i} 
-            position={[
-              (Math.random() - 0.5) * 20, 
-              (Math.random() - 0.5) * 20, 
-              (Math.random() - 0.5) * 100 - 30 
-            ]}
-          >
-            {/* Long thin boxes acting as high-speed data trails */}
-            <boxGeometry args={[0.015, 0.015, Math.random() * 5 + 1]} />
-            <meshBasicMaterial color={i % 2 === 0 ? "#475569" : "#4f46e5"} transparent opacity={Math.random() * 0.3 + 0.05} />
-          </mesh>
+        {Array.from({ length: particleCount }).map((_, i) => (
+          <group key={i}>
+            <mesh position={[(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 150 - 40]}>
+              <boxGeometry args={[0.02, 0.02, Math.random() * 8 + 2]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={0.1} />
+            </mesh>
+            {i % 10 === 0 && (
+              <Text
+                position={[(Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 150 - 40]}
+                fontSize={0.05}
+                color="#4f46e5"
+                fillOpacity={0.3}
+              >
+                {`0x${Math.floor(Math.random() * 1000).toString(16)}`}
+              </Text>
+            )}
+          </group>
         ))}
       </group>
     </group>
   );
 }
 
-// 3D Tilt Experience Block - Untouched, it works perfectly inside Scroll HTML
-function ExperienceBlock({ project, index }: { project: typeof creativeProjects[0], index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["8deg", "-8deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-8deg", "8deg"]);
-
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    
-    x.set((mouseX / width) - 0.5);
-    y.set((mouseY / height) - 0.5);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const isEven = index % 2 === 0;
-
-  return (
-    <section ref={ref} className="relative min-h-[100vh] py-20 lg:py-32 flex items-center overflow-hidden">
-      <div className={`relative z-10 max-w-7xl mx-auto px-6 w-full flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-16 lg:gap-32`}>
-        <motion.div 
-          initial={{ opacity: 0, x: isEven ? -40 : 40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          viewport={{ once: false, margin: "-100px" }}
-          className="flex-1 space-y-6"
-        >
-          <div className="flex items-center gap-4">
-            <span className="text-white font-mono text-[10px] tracking-[0.4em] uppercase border border-white/20 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md">Artifact 0{index + 1}</span>
-            <span className="text-slate-200 font-mono text-[10px] tracking-[0.2em] uppercase">{project.role}</span>
-          </div>
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-none uppercase font-sans">
-            {project.title}
-          </h2>
-          <p className="text-base md:text-xl text-slate-200 leading-relaxed max-w-lg font-light">
-            {project.description}
-          </p>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9, x: isEven ? 50 : -50 }}
-          whileInView={{ opacity: 1, scale: 1, x: 0 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          viewport={{ once: false, margin: "-100px" }}
-          className="flex-1 w-full perspective-[2000px]"
-        >
-          <motion.div 
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="group relative w-full aspect-[16/10] rounded-3xl bg-slate-900/20 will-change-transform flex items-center justify-center border border-white/5 shadow-2xl overflow-hidden"
-          >
-            <div className="absolute inset-0 overflow-hidden rounded-3xl" style={{ transform: "translateZ(30px) scale(1.02)" }}>
-               <img src={project.image} alt={project.title} className="w-full h-full object-cover opacity-40 transition-all duration-1000 group-hover:opacity-70 group-hover:scale-105" />
-               <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/40 to-transparent opacity-100 transition-opacity duration-700 group-hover:opacity-60" />
-            </div>
-            
-            <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end" style={{ transform: "translateZ(60px)" }}>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-bold text-white tracking-tight">{project.title}</h3>
-                <p className="text-slate-300 text-[10px] font-mono tracking-[0.3em] uppercase opacity-80 group-hover:opacity-100 transition-opacity">{project.role}</p>
-              </div>
-              <a href="#" className="w-12 h-12 bg-white/5 backdrop-blur-2xl border border-white/10 text-white hover:text-black hover:bg-white rounded-full flex items-center justify-center opacity-0 -translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 shadow-2xl">
-                <ExternalLink className="w-5 h-5" />
-              </a>
-            </div>
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-export default function InteractivePortfolio() {
+export default function Freelance() {
   const { openContact } = useContact();
-  const [pages, setPages] = useState(creativeProjects.length + 1.8);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mount3D, setMount3D] = useState(false);
+  const { progress } = useProgress();
 
+  // Standard window scroll sync
+  const { scrollYProgress } = useScroll();
+  const smoothScroll = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+  // Data Driven Split
+  const featured = freelanceProjects.filter(p => p.featured);
+  const archive = freelanceProjects.filter(p => !p.featured);
+
+  // Buffer loading to ensure GPU shaders are warm
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setPages(creativeProjects.length * 1.5 + 2.2);
-      } else if (window.innerWidth < 1024) {
-        setPages(creativeProjects.length * 1.3 + 2.0);
-      } else {
-        setPages(creativeProjects.length + 1.8);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Delay 3D mount until page transition completes
+    const timer = setTimeout(() => setMount3D(true), 400);
+    return () => clearTimeout(timer);
   }, []);
 
+
+
   return (
-    <div 
-      className="bg-[#020205] w-screen h-screen relative overflow-hidden selection:bg-[#22d3ee]/30 selection:text-white"
-      style={{ position: 'relative' }}
-    >
-      <style>{`
-        canvas + div {
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-          overflow-y: scroll !important;
-        }
-        canvas + div::-webkit-scrollbar {
-          display: none !important;
-        }
-        body { overflow: hidden !important; }
-      `}</style>
-      
-      {/* Absolute Nav (Outside Canvas to stay fixed above everything) */}
-      <header className="fixed top-0 left-0 w-full z-50 p-8 mix-blend-difference flex justify-between items-start pointer-events-none">
-        <Link to="/" className="flex items-center gap-4 text-white/50 hover:text-white transition-all group pointer-events-auto">
-          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-3" />
-          <span className="font-mono text-xs tracking-[0.4em] uppercase">Return</span>
-        </Link>
-        <div className="text-right space-y-1">
-          <div className="text-white/40 text-[10px] tracking-[0.5em] uppercase font-bold">Division</div>
-          <div className="text-white text-sm tracking-widest font-mono uppercase">Interactive Architecture</div>
-        </div>
-      </header>
+    <div ref={containerRef} className="bg-[#020205] min-h-screen relative selection:bg-indigo-500/30 selection:text-white">
+      {/* Fixed 3D Layer */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {mount3D && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5 }}
+            className="w-full h-full"
+          >
+            <Canvas camera={{ position: [0, 0, 15], fov: 35 }} dpr={[1, 1.5]} gl={{ powerPreference: "high-performance", antialias: false }}>
+              <Suspense fallback={null}>
+                <ScrollBackground scrollProgress={smoothScroll} featuredCount={featured.length} />
+                <EffectComposer multisampling={0}>
+                  <Bloom luminanceThreshold={0.5} intensity={0.8} />
+                  <Noise opacity={0.02} />
+                </EffectComposer>
+              </Suspense>
+            </Canvas>
+          </motion.div>
+        )}
+      </div>
 
-      {/* The entire application is now driven by the Canvas and ScrollControls */}
-      <Canvas camera={{ position: [0, 0, 5], fov: 40 }}>
-        {/* damping makes the scroll smooth, pages defines how long the scroll is */}
-        <ScrollControls damping={0.25} pages={pages}>
-          
-          {/* 3D Scene */}
-          <CameraRig />
-          <ScrollBackground />
+      {/* Standard HTML Content */}
+      <div className="relative z-10 w-full">
+        {/* Static Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 px-4 py-6 md:px-8 md:py-8 flex justify-between items-start pointer-events-none">
+          <Link to="/" className="flex items-center gap-4 text-white/50 hover:text-white transition-all group pointer-events-auto">
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-2" />
+            <span className="font-mono text-[10px] md:text-[12px] tracking-[0.4em] uppercase text-white/80">Back</span>
+          </Link>
+          <div className="text-right space-y-1">
+            <div className="text-white/40 text-[8px] md:text-[9px] tracking-[0.5em] uppercase font-bold">Curated</div>
+            <div className="text-white text-[10px] md:text-xs tracking-widest font-mono uppercase">Work History</div>
+          </div>
+        </header>
 
-          {/* HTML Overlay mapped to Scroll */}
-          <Scroll html style={{ width: '100vw' }}>
-            
-            {/* Cinematic Hero */}
-            <section className="relative h-screen flex flex-col items-center justify-center text-center px-6">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                className="space-y-8 max-w-5xl flex flex-col items-center"
-              >
-                <div className="inline-block border border-white/20 bg-white/10 backdrop-blur-xl px-6 py-2 rounded-full text-white text-[10px] font-mono tracking-[0.5em] uppercase mb-6 shadow-2xl">
-                  Strategic Design • Data Visualization
-                </div>
-                <h1 className="text-6xl md:text-[8rem] font-bold tracking-tight text-white leading-[0.9] uppercase">
-                  Digital <br/>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-slate-400">Exhibition</span>
+        <main>
+          {/* Hero Section */}
+          <section className="relative h-screen flex flex-col items-center justify-center text-center px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-2 max-w-4xl"
+            >
+              <div className="flex flex-col items-center">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5, duration: 1 }}
+                  className="flex items-center gap-4 mb-6"
+                >
+                  <span className="w-8 h-[1px] bg-indigo-500/50" />
+                  <span className="font-mono text-[10px] tracking-[0.5em] text-indigo-400 uppercase">Portfolio Matrix</span>
+                  <span className="w-8 h-[1px] bg-indigo-500/50" />
+                </motion.div>
+
+                <h1 className="flex flex-col items-center space-y-4 md:space-y-8">
+                  <span className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-[-0.04em] text-white leading-[0.85]">
+                    Digital
+                  </span>
+                  <span className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-[-0.06em] text-transparent bg-clip-text bg-gradient-to-br from-slate-200 via-white to-indigo-500/50 leading-[0.85] italic">
+                    Artifacts.
+                  </span>
                 </h1>
-                <p className="text-xs md:text-sm text-slate-200 max-w-2xl mx-auto font-mono leading-relaxed mt-10 tracking-[0.6em] uppercase">
-                  Immersive Software Architecture
-                </p>
-              </motion.div>
 
-              <motion.div 
-                animate={{ y: [0, 15, 0], opacity: [0.1, 0.3, 0.1] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                className="absolute bottom-12 text-slate-500/40 flex flex-col items-center gap-4"
-              >
-                <span className="text-[10px] font-mono tracking-[0.4em] uppercase">Begin Transmission</span>
-                <div className="w-[1px] h-20 bg-gradient-to-b from-slate-500/60 to-transparent" />
-              </motion.div>
-            </section>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.5 }}
+                  transition={{ delay: 1, duration: 1 }}
+                  className="mt-4 text-[10px] md:text-xs text-slate-100 max-w-sm mx-auto font-mono tracking-[0.2em] uppercase leading-relaxed border-t border-white/20 pt-8"
+                >
+                  Selected Project & Open-source works.
+                </motion.p>
+              </div>
+            </motion.div>
+          </section>
 
-            {/* Exhibition pieces */}
-            <div className="w-full relative z-20">
-              {creativeProjects.map((project, index) => (
-                <ExperienceBlock key={project.id} project={project} index={index} />
-              ))}
-            </div>
+          {/* Featured Section */}
+          <div className="space-y-0">
+            {featured.map((project, index) => (
+              <ExperienceBlock key={`featured-${project.id}`} project={project} index={index} variant="featured" />
+            ))}
+          </div>
 
-            {/* Minimalist CTA / Footer */}
-            <section className="relative h-[80vh] flex flex-col items-center justify-center text-center px-6 z-20 overflow-hidden">
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                viewport={{ once: false }}
-                className="space-y-12 relative z-30 flex flex-col items-center"
-              >
-                <h2 className="text-6xl md:text-9xl font-bold tracking-tighter text-white drop-shadow-2xl font-sans">
-                  Next <span className="text-slate-400">Epoch.</span>
-                </h2>
-                <p className="text-2xl md:text-3xl text-slate-200 max-w-lg mx-auto font-light tracking-wide italic">
-                  Available for strategic partnerships and high-impact software engineering.
-                </p>
-                <div className="pt-10 flex flex-col gap-6 items-center pointer-events-auto">
-                  <button 
-                    onClick={openContact}
-                    className="group relative inline-flex items-center justify-center h-16 px-14 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl"
-                  >
-                    <span className="relative z-10 font-mono tracking-widest text-xs">Initiate Project</span>
-                    <div className="absolute inset-0 bg-slate-200 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-                  </button>
+          {/* Archive Section */}
+          {archive.length > 0 && (
+            <section className="relative px-6 pt-36 pb-56 z-20">
+              <div className="max-w-7xl mx-auto">
+                <div className="mb-8 pb-8 flex items-end justify-between">
+                  <div>
+                    <h2 className="text-3xl md:text-5xl font-bold tracking-tighter text-white uppercase font-sans">
+                      Project Archive
+                    </h2>
+                    <p className="text-slate-500 font-mono text-xs mt-2 tracking-widest uppercase">
+                      Additional works and experiments
+                    </p>
+                  </div>
                 </div>
-              </motion.div>
-            </section>
 
-          </Scroll>
-        </ScrollControls>
-      </Canvas>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {archive.map((project, index) => (
+                    <ExperienceBlock key={`archive-${project.id}`} project={project} index={index} variant="compact" />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Footer Section */}
+          <Footer onContactClick={openContact} />
+        </main>
+      </div>
     </div>
   );
 }

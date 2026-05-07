@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import ScrollReveal from './ScrollReveal';
-import { 
-  Database, Terminal, Braces, Cloud, 
-  BarChart2, PieChart, Eye, Atom, 
-  Server, Palette, Layers, Box, Wind, Coffee, Zap, HardDrive, Triangle, Leaf
+import {
+  Database, Terminal, Braces, Cloud,
+  BarChart2, PieChart, Eye, Atom,
+  Server, Layers, Box, Wind, Coffee, Zap, Triangle, Leaf
 } from 'lucide-react';
 
 const pipelineStages = [
@@ -26,7 +26,6 @@ const pipelineStages = [
     techs: [
       { name: "Airflow", Icon: Wind },
       { name: "Databricks", Icon: Layers },
-      { name: "Node.js", Icon: Server },
       { name: "Docker", Icon: Box },
     ]
   },
@@ -39,8 +38,9 @@ const pipelineStages = [
       { name: "Delta Lake", Icon: Triangle },
       { name: "MongoDB", Icon: Leaf },
       { name: "BigQuery", Icon: Zap },
-      { name: "AWS", Icon: HardDrive },
-      { name: "GCP", Icon: Cloud },
+      { name: "GCS", Icon: Cloud },
+      { name: "S3", Icon: Cloud },
+
     ]
   },
   {
@@ -53,6 +53,7 @@ const pipelineStages = [
       { name: "Tableau", Icon: PieChart },
       { name: "Looker", Icon: Eye },
       { name: "React", Icon: Atom },
+      { name: "Node.js", Icon: Server },
     ]
   }
 ];
@@ -62,7 +63,7 @@ const FlowWire = ({ orientation = 'horizontal' }: { orientation?: 'horizontal' |
   return (
     <div className={`flex items-center justify-center ${isH ? 'w-8 lg:w-16 h-full' : 'h-12 w-full'} z-0 opacity-60`}>
       <div className={`relative bg-[var(--border)] overflow-hidden rounded-full ${isH ? 'w-full h-[3px]' : 'h-full w-[3px]'}`}>
-        <motion.div 
+        <motion.div
           className="absolute bg-[var(--accent)] shadow-[0_0_12px_var(--accent)] blur-[1px]"
           style={isH ? { height: '100%', width: '50%', top: 0, left: 0 } : { width: '100%', height: '50%', top: 0, left: 0 }}
           animate={isH ? { x: ['-200%', '300%'] } : { y: ['-200%', '300%'] }}
@@ -75,7 +76,7 @@ const FlowWire = ({ orientation = 'horizontal' }: { orientation?: 'horizontal' |
 
 export default function TechStack() {
   return (
-    <section id="tech-stack" className="py-32 w-full relative">
+    <section id="tech-stack" className="py-32 w-full relative bg-white/70 dark:bg-transparent transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <ScrollReveal className="text-center mb-24">
           <h2 className="font-mono text-[var(--accent)] tracking-wider text-sm font-semibold uppercase mb-4">04. Tech Stack</h2>
@@ -90,11 +91,11 @@ export default function TechStack() {
             <React.Fragment key={stage.id}>
               {/* Stage Card */}
               <div className="w-full lg:flex-1 flex flex-col z-10">
-                <ScrollReveal 
+                <ScrollReveal
                   className="h-full"
                 >
-                  <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-alt)]/30 backdrop-blur-sm h-full hover:border-[var(--accent)]/40 hover:bg-[var(--bg-alt)]/60 transition-all duration-500 shadow-sm hover:shadow-xl group/card relative overflow-hidden">
-                    
+                  <div className="p-6 rounded-2xl border border-[var(--border)] bg-white/90 dark:bg-[var(--bg-alt)]/30 backdrop-blur-sm h-full hover:border-[var(--accent)]/40 hover:bg-white dark:hover:bg-[var(--bg-alt)]/60 transition-all duration-500 shadow-md dark:shadow-sm hover:shadow-xl group/card relative overflow-hidden">
+
                     {/* Subtle hover background glow */}
                     <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -105,12 +106,12 @@ export default function TechStack() {
                       </span>
                     </div>
                     <p className="text-sm text-muted mb-8 h-10 relative z-10">{stage.description}</p>
-                    
+
                     <div className="space-y-3 relative z-10 mt-auto">
                       {stage.techs.map(tech => (
-                        <div 
-                          key={tech.name} 
-                          className="flex items-center space-x-4 p-3.5 rounded-xl bg-[var(--bg-color)] border border-[var(--border)] group hover:border-[var(--accent)]/70 hover:shadow-[0_0_15px_rgba(59,130,246,0.12)] transition-all duration-300 transform hover:-translate-y-0.5"
+                        <div
+                          key={tech.name}
+                          className="flex items-center space-x-4 p-3.5 rounded-xl bg-[var(--bg-color)]/50 dark:bg-[var(--bg-color)] border border-[var(--border)] group hover:border-[var(--accent)]/70 hover:shadow-[0_0_15px_rgba(59,130,246,0.12)] transition-all duration-300 transform hover:-translate-y-0.5"
                         >
                           <tech.Icon className="w-5 h-5 text-muted group-hover:text-[var(--accent)] transition-colors duration-300" />
                           <span className="font-medium text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors duration-300">

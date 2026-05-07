@@ -9,7 +9,7 @@ const experiences = [
     company: "APRIL",
     period: "Jan 2026 — Present",
     location: "Riau, Indonesia",
-    skills: ["Databricks", "Delta Lake", "API", "Python", "PostgreSQL", "Metabase"]
+    skills: ["Databricks", "Delta Lake", "S3", "API", "Python", "PostgreSQL", "MSSQL", "Metabase"]
   },
   {
     id: 2,
@@ -17,7 +17,7 @@ const experiences = [
     company: "SKINTIFIC",
     period: "Mar 2025 — Jan 2026",
     location: "Jakarta, Indonesia",
-    skills: ["BigQuery", "Airflow", "Python", "SQL", "PowerBI", "Docker"]
+    skills: ["BigQuery", "GCS", "Airflow", "Python", "SQL", "PowerBI", "Docker", "React.js", "Node.js"]
   },
   {
     id: 3,
@@ -25,7 +25,7 @@ const experiences = [
     company: "Artaboga Cemerlang (OT Group)",
     period: "Jul 2024 — Mar 2025",
     location: "Jakarta, Indonesia",
-    skills: ["VBA", "SQL", "Google Sheet"]
+    skills: ["VBA", "SQL", "Google Sheet", "Excel"]
   },
   {
     id: 4,
@@ -39,7 +39,7 @@ const experiences = [
 
 export default function Experience() {
   return (
-    <section id="experience" className="py-24 w-full border-y border-subtle bg-[var(--bg-alt)]/20 overflow-hidden">
+    <section id="experience" className="py-24 w-full bg-white/70 dark:bg-[var(--bg-alt)]/20 overflow-hidden transition-colors duration-500">
       <div className="max-w-5xl mx-auto px-6">
         <ScrollReveal className="pb-12 text-center md:text-left">
           <h2 className="font-mono text-[var(--accent)] font-semibold uppercase tracking-widest mb-2 text-xs">02. Career History</h2>
@@ -52,13 +52,13 @@ export default function Experience() {
               <motion.div
                 whileHover={{ y: -5, rotateX: index % 2 === 0 ? 1 : -1, rotateY: index % 2 === 0 ? 2 : -2 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="relative p-8 rounded-3xl border border-subtle bg-[var(--bg-color)]/50 backdrop-blur-sm overflow-hidden group cursor-default"
+                className="relative p-8 rounded-3xl border border-subtle bg-white/90 dark:bg-[var(--bg-color)]/50 shadow-sm dark:shadow-none backdrop-blur-sm overflow-hidden group cursor-default transition-colors duration-500"
               >
                 {/* Ghost Text Background */}
                 <div className="absolute top-1/2 -right-4 -translate-y-1/2 select-none pointer-events-none opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
-                   <span className="font-mono text-8xl md:text-9xl font-bold uppercase tracking-tighter block leading-none">
-                     {exp.skills[0]}
-                   </span>
+                  <span className="font-mono text-8xl md:text-9xl font-bold uppercase tracking-tighter block leading-none">
+                    {exp.skills[0]}
+                  </span>
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -69,7 +69,7 @@ export default function Experience() {
                       </span>
                       <span className="text-xs text-muted uppercase tracking-wider">{exp.location}</span>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-2xl font-bold tracking-tight mb-1 group-hover:text-[var(--accent)] transition-colors duration-300">
                         {exp.role}
@@ -90,7 +90,7 @@ export default function Experience() {
 
                   <div className="hidden md:block">
                     <div className="w-12 h-12 rounded-full border border-subtle flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] group-hover:text-[var(--bg-color)] transition-all duration-500">
-                       <span className="font-mono font-bold">0{index + 1}</span>
+                      <span className="font-mono font-bold">0{index + 1}</span>
                     </div>
                   </div>
                 </div>
