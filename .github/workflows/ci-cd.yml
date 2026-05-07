@@ -1,0 +1,63 @@
+name: CI/CD Pipeline
+
+# 1. TRIGGERS: When should this workflow run?
+on:
+  push:
+    branches: ["main"] # Runs on merges/pushes to main
+  pull_request:
+    branches: ["main"] # Runs when a PR is opened against main
+  workflow_dispatch:   # Allows you to run it manually from the Actions tab
+
+# 2. PERMISSIONS: Required for deploying to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 3. JOBS
+jobs:
+  # --- CONTINUOUS INTEGRATION (CI) ---
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # Use your project's Node version
+          cache: 'npm'       # Best Practice: Caches dependencies to speed up builds
+
+      - name: Install dependencies
+        run: npm ci # Best Practice: Uses 'ci' instead of 'install' for strict, reproducible installs
+
+      - name: Check code formatting & linting
+        run: npm run lint
+
+      - name: TypeScript Type Checking
+        run: npx tsc --noEmit # Best Practice: Catches TS errors before building
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload artifact for deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' 
+
+  # --- CONTINUOUS DEPLOYMENT (CD) ---
+  deploy:
+    # Only run the deployment job if the build job was successful AND it's the main branch
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
